@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@page { size: A4; margin: 15mm; }
+@media print {
+  body { background: #fff !important; }
+  .no-print { display: none !important; }
+  .print-reset { display: block !important; height: auto !important; overflow: visible !important; padding: 0 !important; }
+}
