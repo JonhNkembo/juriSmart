@@ -65,4 +65,5 @@ insert into curriculo_itens (docente_id, categoria, titulo, ano) values
  ('00000000-0000-0000-0000-000000000003','publicacoes','Segurança em redes sem fios',2021),
  ('00000000-0000-0000-0000-000000000005','publicacoes','Machine Learning aplicado à saúde pública',2024);
 
--- Depois de executar este ficheiro, execute também supabase/perfis.sql (perfis e privilégios).
+-- Depois de executar este ficheiro, execute também supabase/perfis.sql
+-- (perfis, privilégios, estudantes ligados às bancas e justificações).

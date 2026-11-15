@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import AuthLayout, { inp, traduzErro, Erro, Senha } from '@/components/AuthLayout'
+import AuthLayout, { inp, traduzErro, Erro, Senha, ForcaSenha } from '@/components/AuthLayout'
 import { PERFIS, PRIVILEGIOS, ROTULO_ACAO, type PerfilTipo } from '@/lib/perfis'
 
 const lbl = 'block text-[13px] font-semibold text-slate-700 mb-1.5'
@@ -10,7 +10,7 @@ const Req = () => <span className="text-rose-600"> *</span>
 
 export default function Cadastro() {
   const [perfil, setPerfil] = useState<PerfilTipo>('avaliador')
-  const [f, setF] = useState({ nome: '', email: '', senha: '', conf: '', codigo: '', grau: '', nivel: 'Doutorado', esp: '' })
+  const [f, setF] = useState({ nome: '', email: '', senha: '', conf: '', grau: '', nivel: 'Doutorado', esp: '' })
   const [msg, setMsg] = useState('')
   const [ok, setOk] = useState('')
   const [loading, setLoading] = useState(false)
@@ -24,12 +24,12 @@ export default function Cadastro() {
     setLoading(true)
     const { data, error } = await supabase.auth.signUp({
       email: f.email, password: f.senha,
-      options: { data: { nome: f.nome, perfil, codigo: f.codigo, grau: f.grau, nivel: f.nivel, especialidades: f.esp } },
+      options: { emailRedirectTo: `${window.location.origin}/confirmado`, data: { nome: f.nome, perfil, grau: f.grau, nivel: f.nivel, especialidades: f.esp } },
     })
     setLoading(false)
     if (error) return setMsg(traduzErro(error.message))
     if (data.user && data.user.identities?.length === 0) return setMsg('Este email já está registado.')
-    if (!data.session) setOk('Conta criada! Enviámos um email de confirmação. Confirme-o e depois inicie sessão.')
+    if (!data.session) setOk('Conta criada! Enviámos um email de confirmação: confirme-o. Depois, a sua conta ficará a aguardar a aprovação do administrador; só então terá acesso ao sistema.')
   }
 
   return (
@@ -45,8 +45,8 @@ export default function Cadastro() {
         <form onSubmit={criar} className="space-y-5">
           <div>
             <label className={lbl}>Perfil<Req /></label>
-            <div className="grid grid-cols-3 gap-2">
-              {(Object.keys(PERFIS) as PerfilTipo[]).map(p => (
+            <div className="grid grid-cols-2 gap-2">
+              {(['avaliador', 'juri'] as PerfilTipo[]).map(p => (
                 <button type="button" key={p} onClick={() => setPerfil(p)}
                   className={`rounded-md border p-3 text-center transition ${perfil === p ? 'border-brand-600 bg-brand-50 ring-2 ring-brand-600/20' : 'border-slate-300 hover:bg-slate-50'}`}>
                   <i className={`fa-solid ${PERFIS[p].icone} text-lg ${perfil === p ? 'text-brand-700' : 'text-slate-400'}`} />
@@ -64,6 +64,7 @@ export default function Cadastro() {
               </ul>
               {PERFIS[perfil].notas.map(n => <p key={n} className="text-[11px] text-slate-500 mt-1.5"><i className="fa-solid fa-circle-info mr-1.5" />{n}</p>)}
             </div>
+            <p className="text-[11px] text-slate-500 mt-2"><i className="fa-solid fa-circle-info mr-1.5" />A conta de Administrador é atribuída pelo administrador do sistema.</p>
           </div>
 
           <div><label className={lbl}>Nome completo<Req /></label>
@@ -84,15 +85,11 @@ export default function Cadastro() {
             </div>
           )}
 
-          {perfil === 'administrador' && (
-            <div><label className={lbl}>Código de administrador<Req /></label>
-              <input required type="password" className={inp} value={f.codigo} onChange={set('codigo')} placeholder="Fornecido pela instituição" autoComplete="off" /></div>
-          )}
-
           <div><label className={lbl}>Palavra-passe<Req /></label>
             <Senha novo value={f.senha} onChange={v => setF({ ...f, senha: v })} placeholder="Mínimo 6 caracteres" /></div>
           <div><label className={lbl}>Confirmar palavra-passe<Req /></label>
-            <Senha novo value={f.conf} onChange={v => setF({ ...f, conf: v })} placeholder="Repita a palavra-passe" /></div>
+            <Senha novo value={f.conf} onChange={v => setF({ ...f, conf: v })} placeholder="Repita a palavra-passe" />
+            <ForcaSenha senha={f.senha} conf={f.conf} /></div>
           <Erro msg={msg} />
           <button disabled={loading} className="w-full h-11 rounded-md bg-brand-700 hover:bg-brand-800 disabled:opacity-60 text-white text-sm font-semibold shadow-sm transition">
             {loading ? 'A criar conta...' : 'Criar conta'}

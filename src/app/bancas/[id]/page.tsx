@@ -6,9 +6,10 @@ import { supabase } from '@/lib/supabase'
 import { PAPEIS, ROTULOS } from '@/lib/matching'
 
 type Ficha = {
+  local: string | null
   id: string; tema: string; estudante: string; data_hora: string
   orientador: { nome: string; grau: string } | null
-  juri_membros: { papel: string; docente: { nome: string; grau: string } | null }[]
+  juri_membros: { papel: string; justificacao: string | null; docente: { nome: string; grau: string } | null }[]
 }
 
 export default function ImprimirBanca() {
@@ -18,7 +19,7 @@ export default function ImprimirBanca() {
 
   useEffect(() => {
     supabase.from('juris')
-      .select('id,tema,estudante,data_hora,orientador:docentes!orientador_id(nome,grau),juri_membros(papel,docente:docentes(nome,grau))')
+      .select('id,tema,estudante,data_hora,local,orientador:docentes!orientador_id(nome,grau),juri_membros(papel,justificacao,docente:docentes(nome,grau))')
       .eq('id', id).single()
       .then(({ data, error }) => (error || !data ? setErro('Júri não encontrado.') : setB(data as unknown as Ficha)))
   }, [id])
@@ -34,11 +35,12 @@ export default function ImprimirBanca() {
   if (!b) return <p className="text-sm text-slate-400">A carregar...</p>
 
   const d = new Date(b.data_hora)
-  const linhas = [
+  type Linha = { cargo: string; nome: string; grau: string; just?: string | null }
+  const linhas: Linha[] = [
     ...(b.orientador ? [{ cargo: 'Orientador', nome: b.orientador.nome, grau: b.orientador.grau }] : []),
     ...PAPEIS.flatMap((p, i) => {
       const m = b.juri_membros.find(x => x.papel === p)
-      return m?.docente ? [{ cargo: ROTULOS[i].replace(' (Avaliador)', ''), nome: m.docente.nome, grau: m.docente.grau }] : []
+      return m?.docente ? [{ cargo: ROTULOS[i].replace(' (Avaliador)', ''), nome: m.docente.nome, grau: m.docente.grau, just: m.justificacao }] : []
     }),
   ]
 
@@ -64,7 +66,7 @@ export default function ImprimirBanca() {
           <dt className="font-bold">Tema:</dt><dd>{b.tema}</dd>
           <dt className="font-bold">Data:</dt><dd className="capitalize">{d.toLocaleDateString('pt-AO', { dateStyle: 'full' })}</dd>
           <dt className="font-bold">Hora:</dt><dd>{d.toLocaleTimeString('pt-AO', { timeStyle: 'short' })}</dd>
-          <dt className="font-bold">Local:</dt><dd className="border-b border-black">&nbsp;</dd>
+          <dt className="font-bold">Local:</dt><dd className="border-b border-black">{b.local || '\u00A0'}</dd>
         </dl>
 
         <h2 className="text-sm font-bold uppercase mt-8 mb-2">Mesa examinadora</h2>
@@ -88,6 +90,15 @@ export default function ImprimirBanca() {
             ))}
           </tbody>
         </table>
+
+        {linhas.some(l => l.just) && (
+          <>
+            <h2 className="text-sm font-bold uppercase mt-8 mb-2">Justificação da composição da mesa</h2>
+            <ul className="space-y-2 text-sm">
+              {linhas.filter(l => l.just).map(l => <li key={l.cargo}><b>{l.cargo} — {l.nome}:</b> {l.just}</li>)}
+            </ul>
+          </>
+        )}
 
         <footer className="mt-12 flex justify-between text-xs">
           <span>Emitido em {new Date().toLocaleDateString('pt-AO', { dateStyle: 'long' })}</span>

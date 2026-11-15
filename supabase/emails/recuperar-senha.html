@@ -1,0 +1,21 @@
+<!-- Supabase → Authentication → Emails → Templates → "Reset password"
+     Assunto sugerido: Recuperar a palavra-passe — JúriSmart AI -->
+<div style="background:#f1f5f9;padding:32px 12px;font-family:Arial,Helvetica,sans-serif;">
+  <table role="presentation" align="center" width="100%" style="max-width:520px;background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid #e2e8f0;">
+    <tr><td style="background:#0c4a6e;border-bottom:4px solid #fbbf24;padding:24px 28px;color:#ffffff;">
+      <div style="font-size:20px;font-weight:bold;">JúriSmart <span style="color:#22d3ee;">AI</span></div>
+      <div style="font-size:12px;color:#bae6fd;margin-top:2px;">Agendamento de Júris de TCC</div>
+    </td></tr>
+    <tr><td style="padding:32px 28px;color:#334155;font-size:15px;line-height:1.6;">
+      <h2 style="margin:0 0 12px;color:#0f172a;font-size:20px;">Recuperar a palavra-passe</h2>
+      <p style="margin:0 0 20px;">Recebemos um pedido para redefinir a palavra-passe da sua conta. Clique no botão abaixo para escolher uma nova.</p>
+      <p style="text-align:center;margin:28px 0;">
+        <a href="{{ .ConfirmationURL }}" style="background:#0369a1;color:#ffffff;text-decoration:none;font-weight:bold;padding:13px 30px;border-radius:6px;display:inline-block;">Redefinir palavra-passe</a>
+      </p>
+      <p style="margin:0;font-size:12px;color:#94a3b8;">Se o botão não funcionar, copie este link para o navegador:<br><span style="word-break:break-all;">{{ .ConfirmationURL }}</span></p>
+    </td></tr>
+    <tr><td style="background:#f8fafc;padding:16px 28px;font-size:12px;color:#94a3b8;border-top:1px solid #e2e8f0;">
+      Se não pediu esta alteração, ignore este email: a sua palavra-passe continua a mesma.
+    </td></tr>
+  </table>
+</div>
