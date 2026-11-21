@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/auth'
 import { PERFIS } from '@/lib/perfis'
 import { inp, traduzErro, Senha, ForcaSenha } from '@/components/AuthLayout'
 import Avatar from '@/components/Avatar'
+import Barra from '@/components/Barra'
 
 const lbl = 'block text-[13px] font-semibold text-slate-700 mb-1.5'
 type Aviso = { ok: boolean; txt: string } | null
@@ -139,6 +140,21 @@ export default function Conta() {
         </div>
       </div>
 
+      {(() => {
+        const itens = [
+          ['Foto de perfil', !!perfil.foto_url], ['Telefone', !!perfil.telefone],
+          ...(ehJuri ? [['Especialidades', doc.esp.trim().length > 0]] as [string, boolean][] : []),
+        ] as [string, boolean][]
+        const feitos = itens.filter(i => i[1]).length
+        return (
+          <div className="bg-white rounded-lg border border-slate-200 p-4">
+            <div className="flex justify-between text-sm"><span className="font-semibold text-slate-700">Perfil completo</span><span className="text-slate-500">{feitos} de {itens.length}</span></div>
+            <Barra valor={feitos} max={itens.length} cor={feitos === itens.length ? 'bg-emerald-600' : 'bg-brand-600'} className="mt-2" rotulo="Perfil completo" />
+            {feitos < itens.length && <p className="text-xs text-slate-500 mt-2">Falta: {itens.filter(i => !i[1]).map(i => i[0].toLowerCase()).join(', ')}.</p>}
+          </div>
+        )
+      })()}
+
       <Cartao icone="fa-camera" titulo="Foto de perfil">
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
           <Avatar nome={perfil.nome} foto={perfil.foto_url} tam={96} className="ring-4 ring-slate-100" />
@@ -159,6 +175,7 @@ export default function Conta() {
             <p className="text-xs text-slate-500 mt-2">JPG, PNG ou WebP, até 8 MB. A imagem é recortada em quadrado.</p>
           </div>
         </div>
+        {busy && <Barra indeterminada altura="h-1.5" className="mt-4" rotulo="A enviar a foto" />}
         <Msg a={aFoto} />
       </Cartao>
 

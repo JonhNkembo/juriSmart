@@ -6,6 +6,7 @@ import { notificar } from '@/lib/notificar'
 import { useAuth } from '@/lib/auth'
 import { pode } from '@/lib/perfis'
 import Avatar from '@/components/Avatar'
+import Barra from '@/components/Barra'
 import { ROTULOS, PAPEIS, PAPEL_CURTO } from '@/lib/matching'
 
 type Banca = {
@@ -102,6 +103,17 @@ export default function Bancas() {
                     <p className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 rounded-full bg-sky-50 text-sky-900 border border-sky-100 text-xs font-semibold">
                       <i className="fa-solid fa-location-dot" />Local: {b.local || 'a definir'}
                     </p>
+                    {aval && (() => {
+                      const etapa = examinada ? 4 : !futura ? 3 : 2
+                      return (
+                        <div className="mt-4 max-w-md">
+                          <div className="flex justify-between text-[11px] text-slate-500 mb-1.5">
+                            {['Conta aprovada', 'Banca marcada', 'Defesa', 'Examinada'].map((t, n) => <span key={t} className={n < etapa ? 'text-brand-800 font-semibold' : ''}>{t}</span>)}
+                          </div>
+                          <Barra valor={etapa} max={4} cor={examinada ? 'bg-emerald-600' : 'bg-brand-600'} altura="h-2" rotulo="Percurso da defesa" />
+                        </div>
+                      )
+                    })()}
                     <p className="text-xs text-slate-400 mt-1">Orientador: {b.orientador?.nome} • {b.modo === 'auto' ? 'Mesa escolhida pela IA' : 'Mesa escolhida manualmente'}</p>
                     {examinada && <p className="text-xs text-emerald-700 font-semibold mt-1"><i className="fa-solid fa-circle-check mr-1" />Examinada{b.examinada_em ? ` em ${new Date(b.examinada_em).toLocaleDateString('pt-AO')}` : ''}</p>}
                   </div>

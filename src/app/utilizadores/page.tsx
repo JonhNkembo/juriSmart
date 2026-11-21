@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { PERFIS, type Perfil, type PerfilTipo } from '@/lib/perfis'
 import Avatar from '@/components/Avatar'
+import Barra from '@/components/Barra'
 
 type Aviso = { ok: boolean; txt: string } | null
 
@@ -92,6 +93,11 @@ export default function Utilizadores() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <h2 className="text-xl font-bold">Utilizadores e perfis</h2>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Pesquisar por nome ou email..." className="w-full sm:w-80 h-10 px-4 text-sm rounded-md border border-slate-300" />
+      </div>
+
+      <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <div className="flex justify-between text-sm"><span className="font-semibold text-slate-700">Contas aprovadas</span><span className="text-slate-500">{l.filter(u => u.estado === 'ativo').length} de {l.length}</span></div>
+        <Barra valor={l.filter(u => u.estado === 'ativo').length} max={l.length || 1} className="mt-2" rotulo="Contas aprovadas" />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">

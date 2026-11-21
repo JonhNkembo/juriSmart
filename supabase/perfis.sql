@@ -34,6 +34,20 @@ alter table juris add column if not exists estado text not null default 'agendad
 alter table juris add column if not exists examinada_em timestamptz;
 alter table juris add column if not exists local text;   -- local da defesa (sala, auditório...)
 
+-- Datas abertas pela secretaria para as defesas (só se pode marcar nestes dias)
+create table if not exists datas_defesa (
+  id uuid primary key default gen_random_uuid(),
+  data date not null unique,
+  hora_inicio time not null default '08:00',
+  hora_fim time not null default '17:00',
+  duracao_min int not null default 60 check (duracao_min between 15 and 480),
+  local text,
+  ativa boolean not null default true,
+  created_at timestamptz default now(),
+  check (hora_fim > hora_inicio)
+);
+alter table datas_defesa enable row level security;
+
 -- Estudante ligado à sua banca (por id) e justificação da escolha de cada júri
 alter table juris add column if not exists estudante_id uuid references perfis(id) on delete set null;
 alter table juri_membros add column if not exists justificacao text;
@@ -117,7 +131,7 @@ where j.estudante_id is null and p.perfil = 'avaliador'
 -- 5) Políticas de acesso (substitui todas as anteriores) -------------------
 do $$ declare r record; begin
   for r in select policyname, tablename from pg_policies
-           where schemaname = 'public' and tablename in ('perfis','docentes','curriculo_itens','juris','juri_membros') loop
+           where schemaname = 'public' and tablename in ('perfis','docentes','curriculo_itens','juris','juri_membros','datas_defesa') loop
     execute format('drop policy %I on public.%I', r.policyname, r.tablename);
   end loop;
 end $$;
@@ -164,6 +178,10 @@ create policy juris_admin on juris for all to authenticated
 create policy membros_ver on juri_membros for select to authenticated
   using (exists (select 1 from juris j where j.id = juri_id));
 create policy membros_admin on juri_membros for all to authenticated
+  using (meu_perfil() = 'administrador') with check (meu_perfil() = 'administrador');
+
+-- datas de defesa: só o administrador vê e gere
+create policy datas_admin on datas_defesa for all to authenticated
   using (meu_perfil() = 'administrador') with check (meu_perfil() = 'administrador');
 
 -- 6) Operações do administrador (executam de forma atómica no servidor) ----

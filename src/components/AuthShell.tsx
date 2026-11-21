@@ -7,6 +7,8 @@ import { AuthCtx } from '@/lib/auth'
 import { rotaPermitida, type Perfil } from '@/lib/perfis'
 import Sidebar from './Sidebar'
 import Landing from './Landing'
+import TopoApp from './TopoApp'
+import Barra from './Barra'
 
 const SO_SEM_SESSAO = ['/login', '/cadastro', '/recuperar']
 const PUBLICAS = [...SO_SEM_SESSAO, '/redefinir', '/confirmado']
@@ -18,8 +20,8 @@ const Carregando = () => (
 
 const btnAviso = 'h-11 px-6 rounded-md bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold'
 
-function Aviso({ tom, icone, titulo, texto, children }: {
-  tom: 'aviso' | 'info'; icone: string; titulo: string; texto: string; children: React.ReactNode
+function Aviso({ tom, icone, titulo, texto, children, espera = false }: {
+  tom: 'aviso' | 'info'; icone: string; titulo: string; texto: string; children: React.ReactNode; espera?: boolean
 }) {
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-gradient-to-br from-brand-900 to-brand-700">
@@ -27,6 +29,7 @@ function Aviso({ tom, icone, titulo, texto, children }: {
         <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center text-3xl ${tom === 'aviso' ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-brand-700'}`}><i className={`fa-solid ${icone}`} /></div>
         <h2 className="text-xl font-bold text-slate-800 mt-4">{titulo}</h2>
         <p className="text-sm text-slate-600 mt-2">{texto}</p>
+        {espera && <Barra indeterminada altura="h-1.5" className="mt-5" rotulo="À espera de aprovação" />}
         <div className="mt-6 flex flex-col items-center">{children}</div>
       </div>
     </div>
@@ -87,6 +90,9 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
     }
   }, [perfil, session])
 
+  // sem sessão: volta a mostrar a página inicial (o atributo só esconde-a enquanto se confirma a sessão)
+  useEffect(() => { if (pronto && !session) document.documentElement.removeAttribute('data-sessao') }, [pronto, session])
+
   const permitido = perfil ? rotaPermitida(path, perfil.perfil) : true
   useEffect(() => {
     if (!pronto) return
@@ -95,8 +101,8 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
     else if (perfil && !permitido) router.replace('/bancas')
   }, [pronto, session, publica, perfil, permitido, router])
 
+  if (path === '/' && !rec && (!pronto || !session)) return <Landing />
   if (!pronto || rec || (!session && !publica && path !== '/') || (session && SO_SEM_SESSAO.includes(path))) return <Carregando />
-  if (!session && path === '/') return <Landing />
   if (publica) return <>{children}</>
   if (semPerfil) {
     return (
@@ -120,7 +126,7 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
   }
   if (perfil?.estado === 'pendente') {
     return (
-      <Aviso tom="aviso" icone="fa-hourglass-half" titulo="Aguarde a aprovação do administrador"
+      <Aviso espera tom="aviso" icone="fa-hourglass-half" titulo="Aguarde a aprovação do administrador"
         texto="A sua conta foi criada com sucesso. Só terá acesso ao sistema depois de o administrador a aprovar. Esta página atualiza-se sozinha assim que isso acontecer.">
         <button onClick={() => carregarPerfil(perfil.id)} className={btnAviso}><i className="fa-solid fa-rotate mr-2" />Verificar agora</button>
         <button onClick={() => supabase.auth.signOut()} className="mt-3 text-sm font-semibold text-slate-500 hover:text-slate-700">Terminar sessão</button>
@@ -141,7 +147,10 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
     <AuthCtx.Provider value={{ perfil, recarregar: () => carregarPerfil(perfil.id) }}>
       <div className="print-reset h-screen flex flex-col md:flex-row overflow-hidden">
         <Sidebar perfil={perfil} onSair={() => supabase.auth.signOut()} />
-        <main className="print-reset flex-1 overflow-y-auto p-6">{children}</main>
+        <div className="print-reset flex-1 flex flex-col min-w-0 overflow-hidden">
+          <TopoApp perfil={perfil} />
+          <main className="print-reset flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        </div>
       </div>
     </AuthCtx.Provider>
   )

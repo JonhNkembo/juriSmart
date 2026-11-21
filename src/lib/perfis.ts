@@ -6,13 +6,14 @@ export type Perfil = {
   foto_url: string | null
 }
 export type Acao =
-  | 'ver_painel' | 'ver_painel_pessoal' | 'agendar' | 'cancelar' | 'ver_bancas' | 'ver_defesas' | 'ver_minha_banca' | 'imprimir'
+  | 'ver_painel' | 'ver_painel_pessoal' | 'agendar' | 'gerir_datas' | 'cancelar' | 'ver_bancas' | 'ver_defesas' | 'ver_minha_banca' | 'imprimir'
   | 'ver_docentes' | 'gerir_docentes' | 'editar_curriculo_proprio' | 'gerir_utilizadores' | 'editar_conta'
 
 export const ROTULO_ACAO: Record<Acao, string> = {
   ver_painel: 'Ver o painel e as estatísticas',
   ver_painel_pessoal: 'Painel pessoal: currículo, próximas defesas e estado do perfil',
-  agendar: 'Agendar júris (automático e manual)',
+  agendar: 'Agendar júris (automático e manual) nos dias abertos',
+  gerir_datas: 'Abrir e gerir as datas disponíveis para defesas',
   cancelar: 'Editar e excluir júris agendados',
   ver_bancas: 'Ver todas as bancas agendadas',
   ver_defesas: 'Ver as defesas em que participa e o seu papel (presidente, vogal ou suplente)',
@@ -41,7 +42,7 @@ export const PERFIS: Record<PerfilTipo, { rotulo: string; detalhe: string; icone
 }
 
 export const PRIVILEGIOS: Record<PerfilTipo, Acao[]> = {
-  administrador: ['ver_painel', 'agendar', 'cancelar', 'ver_bancas', 'imprimir', 'ver_docentes', 'gerir_docentes', 'gerir_utilizadores', 'editar_conta'],
+  administrador: ['ver_painel', 'agendar', 'gerir_datas', 'cancelar', 'ver_bancas', 'imprimir', 'ver_docentes', 'gerir_docentes', 'gerir_utilizadores', 'editar_conta'],
   juri: ['ver_painel_pessoal', 'ver_defesas', 'imprimir', 'editar_curriculo_proprio', 'editar_conta'],
   avaliador: ['ver_minha_banca', 'imprimir', 'editar_conta'],
 }
@@ -50,7 +51,7 @@ export const pode = (p: PerfilTipo | undefined, a: Acao) => !!p && PRIVILEGIOS[p
 
 const ROTAS: [string, Acao][] = [
   ['/docentes/novo', 'gerir_docentes'], ['/docentes', 'ver_docentes'],
-  ['/agendar', 'agendar'], ['/utilizadores', 'gerir_utilizadores'], ['/curriculo', 'editar_curriculo_proprio'],
+  ['/agendar', 'agendar'], ['/utilizadores', 'gerir_utilizadores'], ['/curriculo', 'editar_curriculo_proprio'], ['/datas', 'gerir_datas'],
 ]
 export function rotaPermitida(path: string, p: PerfilTipo) {
   if (path === '/') return pode(p, 'ver_painel') || pode(p, 'ver_painel_pessoal')

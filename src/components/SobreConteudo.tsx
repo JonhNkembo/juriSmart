@@ -17,7 +17,8 @@ const passos = [
   ['Registo', 'A pessoa cria conta como Júri (docente ou investigador) ou Avaliador (estudante) e confirma o email.'],
   ['Aprovação', 'A conta fica pendente até o administrador a aprovar. Só então tem acesso ao sistema.'],
   ['Currículos', 'Os júris completam o currículo e as especialidades; o administrador pode registar docentes.'],
-  ['Agendamento', 'O administrador indica o estudante, o tema, o orientador e a data. A mesa é proposta pela IA ou composta à mão.'],
+  ['Datas abertas', 'O administrador abre os dias e os horários das defesas. Só nesses dias se pode marcar uma banca.'],
+  ['Agendamento', 'O administrador indica o estudante, o tema e o orientador, escolhe um dia aberto e uma hora livre, e indica o local. A mesa é proposta pela IA ou composta à mão.'],
   ['Justificação', 'Cada júri fica com um texto que explica porque foi escolhido. O administrador pode editá-lo antes de confirmar.'],
   ['Avisos', 'Estudante, orientador e júris recebem um email com a data, a mesa e o papel de cada um.'],
   ['Defesa', 'A ficha da banca pode ser impressa. Depois da defesa, o administrador marca-a como examinada e todos são avisados.'],
@@ -38,6 +39,7 @@ export default function SobreConteudo() {
 
       <Seccao icone="fa-bullseye" titulo="O que o sistema faz hoje">
         <Lista itens={[
+          'Datas abertas pela secretaria: só se marca em dias abertos, em horas ainda livres, com barra de ocupação por dia.',
           'Agendamento automático (pontuação) ou manual da mesa: presidente, 1.º vogal, 2.º vogal e suplente, com pesquisa de docentes e de estudantes.',
           'Verificação de conflitos: um docente, ou o orientador, não pode estar em duas bancas à mesma hora.',
           'Justificação escrita da escolha de cada júri, visível ao estudante.',

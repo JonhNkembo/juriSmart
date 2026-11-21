@@ -2,8 +2,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase, fmtData } from '@/lib/supabase'
+import Barra from '@/components/Barra'
+import { hojeLocal, ocupacaoDoDia, type DataDefesa } from '@/lib/slots'
 
-type Jur = { id: string; tema: string; estudante: string; data_hora: string; modo: string; orientador: { nome: string } | null }
+type Jur = { id: string; tema: string; estudante: string; data_hora: string; modo: string; estado: string; orientador: { nome: string } | null }
 const CORES = ['bg-brand-600', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500']
 
 export default function PainelAdmin() {
@@ -11,13 +13,14 @@ export default function PainelAdmin() {
   const [rec, setRec] = useState<Jur[]>([])
   const [esp, setEsp] = useState<[string, number][]>([])
   const [pend, setPend] = useState(0)
+  const [prog, setProg] = useState({ examinadas: 0, contasAtivas: 0, contas: 0, horasOcup: 0, horas: 0, diasAbertos: 0 })
 
   useEffect(() => {
     (async () => {
       supabase.from('perfis').select('id', { count: 'exact', head: true }).eq('estado', 'pendente').then(({ count }) => setPend(count ?? 0))
       const [d, j, m] = await Promise.all([
         supabase.from('docentes').select('especialidades'),
-        supabase.from('juris').select('id,tema,estudante,data_hora,modo,orientador:docentes!orientador_id(nome)').order('data_hora', { ascending: false }),
+        supabase.from('juris').select('id,tema,estudante,data_hora,modo,estado,orientador:docentes!orientador_id(nome)').order('data_hora', { ascending: false }),
         supabase.from('juri_membros').select('id', { count: 'exact', head: true }),
       ])
       const docs = d.data ?? []; const juris = (j.data ?? []) as unknown as Jur[]
@@ -28,6 +31,16 @@ export default function PainelAdmin() {
         media: docs.length ? Math.round(((m.count ?? 0) / docs.length) * 10) / 10 : 0,
       })
       setRec(juris.slice(0, 5))
+      const { data: pf } = await supabase.from('perfis').select('estado')
+      const { data: dd } = await supabase.from('datas_defesa').select('*').eq('ativa', true).gte('data', hojeLocal())
+      const tempos = juris.map(x => ({ data_hora: x.data_hora }))
+      let horas = 0, ocup = 0
+      ;((dd ?? []) as DataDefesa[]).forEach(d => { const o = ocupacaoDoDia(d, tempos, new Date(0)); horas += o.total; ocup += o.total - o.livres })
+      setProg({
+        examinadas: juris.filter(x => x.estado === 'examinada').length,
+        contas: (pf ?? []).length, contasAtivas: (pf ?? []).filter(x => x.estado === 'ativo').length,
+        horas, horasOcup: ocup, diasAbertos: (dd ?? []).length,
+      })
       const c: Record<string, number> = {}
       docs.forEach(x => (x.especialidades as string[]).forEach(e => (c[e] = (c[e] ?? 0) + 1)))
       setEsp(Object.entries(c).sort((a, b) => b[1] - a[1]).slice(0, 4))
@@ -66,6 +79,29 @@ export default function PainelAdmin() {
           </div>
         ))}
       </div>
+      {prog.diasAbertos === 0 && (
+        <Link href="/datas" className="flex items-center justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-5 py-3 text-sm text-sky-900 hover:bg-sky-100">
+          <span><i className="fa-solid fa-calendar-xmark mr-2" />Não há dias abertos para defesas. Sem eles, não é possível agendar.</span>
+          <span className="font-semibold">Abrir datas</span>
+        </Link>
+      )}
+
+      <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+        <h3 className="text-lg font-bold">Andamento</h3>
+        <div className="grid md:grid-cols-3 gap-6 mt-4">
+          {[
+            ['Bancas examinadas', prog.examinadas, s.juris, 'bg-emerald-600', `${prog.examinadas} de ${s.juris}`],
+            ['Contas aprovadas', prog.contasAtivas, prog.contas, 'bg-brand-600', `${prog.contasAtivas} de ${prog.contas}`],
+            ['Horários ocupados nos dias abertos', prog.horasOcup, prog.horas, prog.horas && prog.horasOcup / prog.horas > 0.85 ? 'bg-rose-500' : 'bg-amber-500', `${prog.horasOcup} de ${prog.horas}`],
+          ].map(([t, v, m, cor, txt]) => (
+            <div key={t as string}>
+              <div className="flex justify-between text-sm mb-1.5"><span className="font-medium text-slate-700">{t}</span><span className="text-slate-500">{txt}</span></div>
+              <Barra valor={v as number} max={(m as number) || 1} cor={cor as string} altura="h-2.5" rotulo={t as string} />
+            </div>
+          ))}
+        </div>
+      </section>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
           <div className="flex justify-between mb-4">

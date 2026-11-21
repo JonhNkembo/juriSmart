@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { CATEGORIAS, type Item } from '@/lib/types'
+import Barra from './Barra'
 
 const inp = 'w-full h-11 px-3.5 rounded-md border border-slate-300 bg-white text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20 transition'
 const lbl = 'block text-[13px] font-semibold text-slate-700 mb-1.5'
@@ -33,6 +34,10 @@ export default function Curriculo({ docenteId }: { docenteId: string }) {
 
   return (
     <div className="space-y-6">
+      <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <div className="flex justify-between text-sm"><span className="font-semibold text-slate-700">Secções com itens</span><span className="text-slate-500">{new Set(itens.map(i => i.categoria)).size} de {CATEGORIAS.length}</span></div>
+        <Barra valor={new Set(itens.map(i => i.categoria)).size} max={CATEGORIAS.length} className="mt-2" rotulo="Secções do currículo preenchidas" />
+      </div>
       <form onSubmit={add} className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
         <h3 className="bg-brand-900 text-white text-sm font-bold px-6 py-3 border-b-4 border-amber-400"><i className="fa-solid fa-plus mr-2" />Adicionar ao currículo</h3>
         <div className="p-6 grid grid-cols-1 md:grid-cols-[13rem_1fr_6.5rem_auto] gap-4 items-end">

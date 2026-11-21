@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { pode } from '@/lib/perfis'
 import { CATEGORIAS, type Docente } from '@/lib/types'
+import Barra from '@/components/Barra'
 
 export default function Docentes() {
   const { perfil } = useAuth()
@@ -47,6 +48,7 @@ export default function Docentes() {
             <button key={x.id} onClick={() => setSel(x.id)} className={`w-full text-left p-3 rounded-xl border ${x.id === sel ? 'border-brand-500 bg-brand-50' : 'border-slate-200'}`}>
               <p className="font-semibold text-sm">{x.nome}{x.id === perfil.docente_id && <span className="ml-2 text-[10px] text-brand-700 font-bold">(você)</span>}</p>
               <p className="text-xs text-slate-500">{x.grau}</p>
+              <Barra valor={new Set(x.curriculo_itens.map(i => i.categoria)).size} max={CATEGORIAS.length} altura="h-1" className="mt-2" rotulo={`Currículo de ${x.nome}`} />
             </button>
           ))}
         </div>

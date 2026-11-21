@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -7,6 +7,9 @@ import type { Docente } from '@/lib/types'
 import { rankDocentes, assignSlots, pontuar, justificar, PAPEIS, ROTULOS } from '@/lib/matching'
 import Combobox from '@/components/Combobox'
 import { notificar, type ResultadoAviso } from '@/lib/notificar'
+import SeletorData from '@/components/SeletorData'
+import Barra from '@/components/Barra'
+import { ocupacaoDoDia, hojeLocal, type DataDefesa, type Dia } from '@/lib/slots'
 
 const inp = 'w-full h-11 px-3.5 rounded-md border border-slate-300 bg-white text-sm focus:outline-none focus:border-brand-600 focus:ring-2 focus:ring-brand-600/20'
 const lbl = 'block text-[13px] font-semibold text-slate-700 mb-1.5'
@@ -44,6 +47,9 @@ export default function AgendarForm({ editarId }: { editarId?: string }) {
   const [carregado, setCarregado] = useState(!editarId)
   const [orig, setOrig] = useState<{ modo: 'auto' | 'manual'; slots: (string | null)[] } | null>(null)
   const [comBanca, setComBanca] = useState<Set<string>>(new Set())
+  const [datas, setDatas] = useState<DataDefesa[]>([])
+  const [tempos, setTempos] = useState<{ id: string; data_hora: string }[]>([])
+  const [datasProntas, setDatasProntas] = useState(false)
 
   useEffect(() => {
     supabase.from('docentes').select('*, curriculo_itens(*)').order('nome').then(({ data }) => setDocs((data ?? []) as Docente[]))
@@ -55,6 +61,27 @@ export default function AgendarForm({ editarId }: { editarId?: string }) {
       setComBanca(new Set((data ?? []).filter(j => j.estudante_id && j.id !== editarId).map(j => j.estudante_id as string)))
     })
   }, [editarId])
+
+  useEffect(() => {
+    supabase.from('datas_defesa').select('*').eq('ativa', true).gte('data', hojeLocal()).order('data')
+      .then(({ data }) => { setDatas((data ?? []) as DataDefesa[]); setDatasProntas(true) })
+    supabase.from('juris').select('id,data_hora').then(({ data }) => setTempos((data ?? []) as { id: string; data_hora: string }[]))
+  }, [])
+
+  // dias abertos com as horas livres; ao editar, o dia da própria banca fica sempre visível
+  const dias: Dia[] = useMemo(() => {
+    const outros = tempos.filter(t => t.id !== editarId)
+    const lista = datas.map(d => ocupacaoDoDia(d, outros))
+    const [dq, hq] = f.quando ? f.quando.split('T') : ['', '']
+    if (editarId && dq && !lista.some(x => x.dia.data === dq)) {
+      const dia: DataDefesa = { id: 'atual', data: dq, hora_inicio: '08:00', hora_fim: '18:00', duracao_min: 60, local: null, ativa: true }
+      const o = ocupacaoDoDia(dia, outros, new Date(0))
+      const h = o.horas.find(x => x.hora === hq)
+      if (h) h.livre = true; else { o.horas.push({ hora: hq, livre: true }); o.horas.sort((a, b) => a.hora.localeCompare(b.hora)) }
+      lista.push({ ...o, livres: o.horas.filter(x => x.livre).length, total: o.horas.length, legado: true })
+    }
+    return lista.sort((a, b) => a.dia.data.localeCompare(b.dia.data))
+  }, [datas, tempos, f.quando, editarId])
 
   useEffect(() => {
     if (!editarId) return
@@ -123,6 +150,13 @@ export default function AgendarForm({ editarId }: { editarId?: string }) {
     if (!f.tema || !f.estudante || !f.orientador || !f.quando) return setMsg('Preencha todos os campos obrigatórios.')
     const est = estudantes.find(e => e.id === f.estudante)
     if (!est) return setMsg('Escolha um estudante registado.')
+    const [dq] = f.quando.split('T')
+    const diaSel = dias.find(d => d.dia.data === dq)
+    if (!diaSel || (diaSel.legado && !editarId)) return setMsg('Escolha um dos dias abertos para as defesas.')
+    const t0 = new Date(f.quando).getTime()
+    const folga = (diaSel.dia.duracao_min - 1) * 60000
+    const { data: choque } = await supabase.from('juris').select('id').gte('data_hora', new Date(t0 - folga).toISOString()).lte('data_hora', new Date(t0 + folga).toISOString())
+    if ((choque ?? []).some(c => c.id !== editarId)) return setMsg('Esse horário acabou de ser ocupado por outra banca. Escolha outra hora.')
     const ids = slots.filter(Boolean) as string[]
     if (slots.slice(0, 3).some(s => !s)) return setMsg('Presidente e dois vogais são obrigatórios.')
     if (new Set(ids).size !== ids.length || ids.includes(f.orientador)) return setMsg('Há docentes repetidos ou o orientador está na mesa.')
@@ -159,10 +193,31 @@ export default function AgendarForm({ editarId }: { editarId?: string }) {
     setSlots([null, null, null, null]); setCompat([null, null, null, null]); setJust(['', '', '', ''])
   }
 
-  if (!carregado) return <p className="text-sm text-slate-400">{msg || 'A carregar...'}</p>
+  if (!carregado) return <div className="max-w-md"><p className="text-sm text-slate-500 mb-2">{msg || 'A carregar a banca...'}</p>{!msg && <Barra indeterminada altura="h-1.5" rotulo="A carregar" />}</div>
+
+  const etapas = [
+    { t: 'Trabalho e pessoas', ok: !!(f.tema && f.estudante && f.orientador) },
+    { t: 'Dia, hora e local', ok: !!f.quando },
+    { t: 'Mesa examinadora', ok: slots.slice(0, 3).every(Boolean) },
+  ]
+  const feitas = etapas.filter(e => e.ok).length
 
   return (
     <div className="space-y-6">
+      <div className="bg-white rounded-lg border border-slate-200 p-4">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-semibold text-slate-700">Progresso do agendamento</span>
+          <span className="text-slate-500">{feitas} de {etapas.length} etapas</span>
+        </div>
+        <Barra valor={feitas} max={etapas.length} cor={feitas === etapas.length ? 'bg-emerald-600' : 'bg-brand-600'} className="mt-2" rotulo="Progresso do agendamento" />
+        <ul className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3 text-xs">
+          {etapas.map(e => (
+            <li key={e.t} className={e.ok ? 'text-emerald-700 font-semibold' : 'text-slate-500'}>
+              <i className={`fa-solid ${e.ok ? 'fa-circle-check' : 'fa-circle'} mr-1.5 ${e.ok ? '' : 'text-[9px] text-slate-300'}`} />{e.t}
+            </li>
+          ))}
+        </ul>
+      </div>
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 mb-6 gap-4">
           <div>
@@ -185,7 +240,9 @@ export default function AgendarForm({ editarId }: { editarId?: string }) {
             {!estudantes.length && <p className="text-xs text-amber-700 mt-1.5">Ainda não há estudantes registados. Peça-lhes para criar conta com o perfil Avaliador (Estudante).</p>}</div>
           <div><label className={lbl}>Orientador * <span className="font-normal text-slate-400">(pesquise pelo nome)</span></label>
             <Combobox opcoes={opcoes} value={f.orientador} onChange={escolherOrientador} placeholder="Pesquisar orientador..." /></div>
-          <div><label className={lbl}>Data e Hora *</label><input type="datetime-local" className={inp} value={f.quando} onChange={set('quando')} /></div>
+          <div className="md:col-span-2 lg:col-span-3"><label className={lbl}>Dia e hora da defesa *</label>
+            <SeletorData dias={dias} valor={f.quando} carregado={datasProntas}
+              onEscolher={(q, dia) => setF({ ...f, quando: q, local: f.local || dia.local || '' })} /></div>
           <div className="md:col-span-2 lg:col-span-3"><label className={lbl}><i className="fa-solid fa-location-dot text-brand-600 mr-1.5" />Local da defesa</label>
             <input className={inp} value={f.local} onChange={set('local')} placeholder="Ex.: Sala 12, Bloco B — ou Auditório Principal" maxLength={120} /></div>
         </div>

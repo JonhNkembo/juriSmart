@@ -23,6 +23,7 @@ export default function Sidebar({ perfil, onSair }: { perfil: Perfil; onSair: ()
   const todos: Item[] = [
     { href: '/', label: p === 'juri' ? 'O Meu Painel' : 'Visão Geral', icon: 'fa-chart-pie', acao: 'ver_painel', ou: 'ver_painel_pessoal' },
     { href: '/agendar', label: 'Agendar Júri (IA)', icon: 'fa-wand-magic-sparkles', acao: 'agendar' },
+    { href: '/datas', label: 'Datas de Defesa', icon: 'fa-calendar-days', acao: 'gerir_datas' },
     { href: '/docentes', label: 'Docentes & Currículos', icon: 'fa-user-graduate', acao: 'ver_docentes' },
     { href: '/docentes/novo', label: 'Novo Docente', icon: 'fa-user-plus', acao: 'gerir_docentes' },
     { href: '/curriculo', label: 'O Meu Currículo', icon: 'fa-book-open', acao: 'editar_curriculo_proprio' },

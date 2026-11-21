@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { supabase, fmtData } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth'
 import { PAPEL_CURTO } from '@/lib/matching'
+import Barra from '@/components/Barra'
 import { CATEGORIAS, type Item } from '@/lib/types'
 
 type Defesa = {
@@ -73,6 +74,13 @@ export default function PainelJuri() {
           </div>
         ))}
       </div>
+
+      {defs.length > 0 && (
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5">
+          <div className="flex justify-between text-sm mb-1.5"><span className="font-semibold text-slate-700">Defesas examinadas</span><span className="text-slate-500">{examinadas.length} de {defs.length}</span></div>
+          <Barra valor={examinadas.length} max={defs.length} cor="bg-emerald-600" altura="h-2.5" rotulo="Defesas examinadas" />
+        </section>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
